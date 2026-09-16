@@ -86,13 +86,15 @@
     color:var(--ink-soft);
     max-width:52ch;
     margin:0;
+    word-break:keep-all;
+    overflow-wrap:break-word;
   }
 
   .panel{
     background:var(--paper-2);
     border:1px solid var(--line);
     border-radius:2px;
-    padding:28px;
+    padding:28px 28px 64px;
     position:relative;
   }
 
@@ -183,6 +185,12 @@
     border-radius:999px;
     cursor:pointer;
     transition:border-color .2s ease, color .2s ease;
+    white-space:nowrap;
+  }
+  .controls-right{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
   }
   .copy-btn:hover{
     border-color:var(--indigo);
@@ -191,6 +199,68 @@
   .copy-btn.copied{
     border-color:var(--stamp);
     color:var(--stamp);
+  }
+
+  .info-btn{
+    position:absolute;
+    right:22px;
+    bottom:20px;
+    width:28px; height:28px;
+    border-radius:50%;
+    border:1px solid var(--indigo);
+    color:var(--indigo);
+    background:var(--paper-2);
+    font-family:'Noto Serif KR', serif;
+    font-size:13px;
+    line-height:1;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    z-index:6;
+    transition:background .2s ease, color .2s ease;
+  }
+  .info-btn:hover{
+    background:var(--indigo-soft);
+  }
+  .info-btn[aria-expanded="true"]{
+    background:var(--indigo);
+    color:var(--paper);
+  }
+  .info-panel{
+    position:absolute;
+    right:22px;
+    bottom:60px;
+    width:calc(100% - 44px);
+    max-width:360px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:16px 18px;
+    box-shadow:0 12px 32px rgba(0,0,0,.18);
+    opacity:0;
+    transform:translateY(6px);
+    pointer-events:none;
+    transition:opacity .22s ease, transform .22s ease;
+    z-index:5;
+  }
+  .info-panel.open{
+    opacity:1;
+    transform:translateY(0);
+    pointer-events:auto;
+  }
+  .info-panel p{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    line-height:1.75;
+    word-break:keep-all;
+    overflow-wrap:break-word;
+    margin:0;
+  }
+  .info-panel p b{
+    color:var(--ink);
+    font-weight:600;
   }
 
   .particle-row{
@@ -234,18 +304,6 @@
     opacity:.6;
   }
 
-  .note{
-    margin-top:30px;
-    font-size:12.5px;
-    color:var(--ink-soft);
-    line-height:1.75;
-    max-width:56ch;
-  }
-  .note b{
-    color:var(--ink);
-    font-weight:600;
-  }
-
   @media (prefers-reduced-motion: reduce){
     .toggle .thumb, .toggle button, .copy-btn{ transition:none; }
   }
@@ -269,7 +327,10 @@
           <button type="button" data-mode="hiragana" class="active" id="btn-hira">ひらがな</button>
           <button type="button" data-mode="katakana" id="btn-kata">カタカナ</button>
         </div>
-        <button type="button" class="copy-btn" id="copyBtn">결과 복사</button>
+        <div class="controls-right">
+          <button type="button" class="copy-btn" id="convertAllBtn">전체 변환</button>
+          <button type="button" class="copy-btn" id="copyBtn">결과 복사</button>
+        </div>
       </div>
 
       <label class="particle-row" for="particleFix">
@@ -280,9 +341,12 @@
       <div class="output-wrap">
         <div class="output" id="output"></div>
       </div>
-    </div>
 
-    <p class="note"><b>일러두기.</b> 토글은 지금부터 입력하는 글자에만 적용돼요 — 이미 입력한 글자의 표기는 토글을 바꿔도 그대로 유지돼요. <b>조사 표기 보정</b>은 여러 음절로 된 한 단어(띄어쓰기 없이 붙은 덩어리)의 <b>맨 끝 글자</b>가 순수한 와/에/오일 때만 は/へ/を로 바꿔주는 기능이에요. 이건 문법을 실제로 분석하는 게 아니라 자리 하나만 보고 추측하는 방식이라, "친구와" 같은 평범한 한국어 문장에서도 조사가 아닌 와/에/오가 잘못 바뀔 수 있어요. 일본어 문장을 발음 나는 대로 옮길 때만 켜서 쓰고, 평소 한글 문장을 변환할 땐 꺼두는 걸 추천드려요. 이 변환기 자체도 발음을 근사 표기하는 도구라 실제 표준 표기와는 다를 수 있어요. 연음(받침이 다음 음절로 이어지는 것)과 비음화(예: '합니다'→'함니다')는 반영했지만, 모든 발음 변동을 완벽히 재현하지는 못해요.</p>
+      <button type="button" class="info-btn" id="infoBtn" aria-expanded="false" aria-controls="infoPanel" title="일러두기">?</button>
+      <div class="info-panel" id="infoPanel">
+        <p><b>일러두기.</b> 토글은 지금부터 입력하는 글자에만 적용돼요 — 이미 입력한 글자의 표기는 토글을 바꿔도 그대로 유지돼요. <b>전체 변환</b> 버튼을 누르면 지금까지 섞여 있던 출력 전체가 그 순간 켜져 있는 토글(히라가나 또는 가타카나)로 한 번에 통일돼요. 누른 뒤 이어서 입력하는 글자는 다시 그 시점의 토글을 따라가요. <b>조사 표기 보정</b>은 여러 음절로 된 한 단어(띄어쓰기 없이 붙은 덩어리)의 <b>맨 끝 글자</b>가 순수한 와/에/오일 때만 は/へ/を로 바꿔주는 기능이에요. 이건 문법을 실제로 분석하는 게 아니라 자리 하나만 보고 추측하는 방식이라, "친구와" 같은 평범한 한국어 문장에서도 조사가 아닌 와/에/오가 잘못 바뀔 수 있어요. 일본어 문장을 발음 나는 대로 옮길 때만 켜서 쓰고, 평소 한글 문장을 변환할 땐 꺼두는 걸 추천드려요. 이 변환기 자체도 발음을 근사 표기하는 도구라 실제 표준 표기와는 다를 수 있어요. 연음(받침이 다음 음절로 이어지는 것)과 비음화(예: '합니다'→'함니다')는 반영했지만, 모든 발음 변동을 완벽히 재현하지는 못해요.</p>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -543,7 +607,10 @@
   const btnHira = document.getElementById('btn-hira');
   const btnKata = document.getElementById('btn-kata');
   const copyBtn = document.getElementById('copyBtn');
+  const convertAllBtn = document.getElementById('convertAllBtn');
   const particleFixEl = document.getElementById('particleFix');
+  const infoBtn = document.getElementById('infoBtn');
+  const infoPanel = document.getElementById('infoPanel');
 
   let mode = 'hiragana';
   let prevValue = '';
@@ -589,10 +656,14 @@
     prevValue = newValue;
   }
 
+  function paintOutput(){
+    output.textContent = convertMixed(input.value, charModes, mode, particleFixEl.checked);
+  }
+
   function render(){
     const cursorPos = input.selectionStart == null ? input.value.length : input.selectionStart;
     retagModes(input.value, cursorPos);
-    output.textContent = convertMixed(input.value, charModes, mode, particleFixEl.checked);
+    paintOutput();
   }
 
   function setMode(next){
@@ -608,6 +679,28 @@
   btnHira.addEventListener('click', () => setMode('hiragana'));
   btnKata.addEventListener('click', () => setMode('katakana'));
   particleFixEl.addEventListener('change', render);
+
+  convertAllBtn.addEventListener('click', () => {
+    if (!charModes.length) return;
+    charModes = charModes.map(() => mode);
+    paintOutput();
+  });
+
+  infoBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = !infoPanel.classList.contains('open');
+    infoPanel.classList.toggle('open', willOpen);
+    infoBtn.setAttribute('aria-expanded', String(willOpen));
+    infoBtn.textContent = willOpen ? '×' : '?';
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!infoPanel.classList.contains('open')) return;
+    if (infoPanel.contains(e.target) || infoBtn.contains(e.target)) return;
+    infoPanel.classList.remove('open');
+    infoBtn.setAttribute('aria-expanded', 'false');
+    infoBtn.textContent = '?';
+  });
 
   copyBtn.addEventListener('click', async () => {
     const text = output.textContent;
