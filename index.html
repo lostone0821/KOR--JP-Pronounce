@@ -137,6 +137,73 @@
     gap:14px;
   }
 
+  .toggle-group{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    position:relative;
+  }
+  .mini-info-btn{
+    width:20px; height:20px;
+    border-radius:50%;
+    border:1px solid var(--indigo-soft);
+    color:var(--ink-soft);
+    background:transparent;
+    font-family:'Noto Serif KR', serif;
+    font-size:11px;
+    line-height:1;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    flex:0 0 auto;
+    transition:border-color .2s ease, color .2s ease, background .2s ease;
+  }
+  .mini-info-btn:hover{
+    border-color:var(--indigo);
+    color:var(--indigo);
+  }
+  .mini-info-btn[aria-expanded="true"]{
+    background:var(--indigo);
+    border-color:var(--indigo);
+    color:var(--paper);
+  }
+  .mini-info-panel{
+    position:absolute;
+    top:calc(100% + 10px);
+    left:0;
+    width:260px;
+    max-width:calc(100vw - 80px);
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:14px 16px;
+    box-shadow:0 12px 32px rgba(0,0,0,.18);
+    opacity:0;
+    transform:translateY(6px);
+    pointer-events:none;
+    transition:opacity .22s ease, transform .22s ease;
+    z-index:8;
+  }
+  .mini-info-panel.open{
+    opacity:1;
+    transform:translateY(0);
+    pointer-events:auto;
+  }
+  .mini-info-panel p{
+    font-size:12px;
+    color:var(--ink-soft);
+    line-height:1.7;
+    word-break:keep-all;
+    overflow-wrap:break-word;
+    margin:0;
+  }
+  .mini-info-panel p b{
+    color:var(--ink);
+    font-weight:600;
+  }
+
   .toggle{
     display:inline-flex;
     border:1px solid var(--indigo);
@@ -205,13 +272,13 @@
     position:absolute;
     right:22px;
     bottom:20px;
-    width:28px; height:28px;
+    width:20px; height:20px;
     border-radius:50%;
     border:1px solid var(--indigo);
     color:var(--indigo);
     background:var(--paper-2);
     font-family:'Noto Serif KR', serif;
-    font-size:13px;
+    font-size:11px;
     line-height:1;
     cursor:pointer;
     display:inline-flex;
@@ -322,10 +389,16 @@
       <textarea id="input" placeholder="예) 안녕하세요, 오늘 뭐 해요?" autofocus></textarea>
 
       <div class="controls">
-        <div class="toggle" id="toggle" data-mode="hiragana">
-          <div class="thumb"></div>
-          <button type="button" data-mode="hiragana" class="active" id="btn-hira">ひらがな</button>
-          <button type="button" data-mode="katakana" id="btn-kata">カタカナ</button>
+        <div class="toggle-group">
+          <div class="toggle" id="toggle" data-mode="hiragana">
+            <div class="thumb"></div>
+            <button type="button" data-mode="hiragana" class="active" id="btn-hira">ひらがな</button>
+            <button type="button" data-mode="katakana" id="btn-kata">カタカナ</button>
+          </div>
+          <button type="button" class="mini-info-btn" id="toggleInfoBtn" aria-expanded="false" aria-controls="toggleInfoPanel" title="토글 설명">?</button>
+          <div class="mini-info-panel" id="toggleInfoPanel">
+            <p>토글은 <b>지금부터 입력하는 글자에만</b> 적용돼요 — 이미 입력한 글자의 표기는 토글을 바꿔도 그대로 유지돼요. <b>전체 변환</b> 버튼을 누르면 지금까지 섞여 있던 출력 전체가 그 순간 켜져 있는 토글로 한 번에 통일되고, 누른 뒤 이어서 입력하는 글자는 다시 그 시점의 토글을 따라가요.</p>
+          </div>
         </div>
         <div class="controls-right">
           <button type="button" class="copy-btn" id="convertAllBtn">전체 변환</button>
@@ -344,7 +417,7 @@
 
       <button type="button" class="info-btn" id="infoBtn" aria-expanded="false" aria-controls="infoPanel" title="일러두기">?</button>
       <div class="info-panel" id="infoPanel">
-        <p><b>일러두기.</b> 토글은 지금부터 입력하는 글자에만 적용돼요 — 이미 입력한 글자의 표기는 토글을 바꿔도 그대로 유지돼요. <b>전체 변환</b> 버튼을 누르면 지금까지 섞여 있던 출력 전체가 그 순간 켜져 있는 토글(히라가나 또는 가타카나)로 한 번에 통일돼요. 누른 뒤 이어서 입력하는 글자는 다시 그 시점의 토글을 따라가요. <b>조사 표기 보정</b>은 여러 음절로 된 한 단어(띄어쓰기 없이 붙은 덩어리)의 <b>맨 끝 글자</b>가 순수한 와/에/오일 때만 は/へ/を로 바꿔주는 기능이에요. 이건 문법을 실제로 분석하는 게 아니라 자리 하나만 보고 추측하는 방식이라, "친구와" 같은 평범한 한국어 문장에서도 조사가 아닌 와/에/오가 잘못 바뀔 수 있어요. 일본어 문장을 발음 나는 대로 옮길 때만 켜서 쓰고, 평소 한글 문장을 변환할 땐 꺼두는 걸 추천드려요. 이 변환기 자체도 발음을 근사 표기하는 도구라 실제 표준 표기와는 다를 수 있어요. 연음(받침이 다음 음절로 이어지는 것)과 비음화(예: '합니다'→'함니다')는 반영했지만, 모든 발음 변동을 완벽히 재현하지는 못해요.</p>
+        <p><b>일러두기.</b> <b>조사 표기 보정</b>은 여러 음절로 된 한 단어(띄어쓰기 없이 붙은 덩어리)의 <b>맨 끝 글자</b>가 순수한 와/에/오일 때만 は/へ/を로 바꿔주는 기능이에요. 이건 문법을 실제로 분석하는 게 아니라 자리 하나만 보고 추측하는 방식이라, "친구와" 같은 평범한 한국어 문장에서도 조사가 아닌 와/에/오가 잘못 바뀔 수 있어요. 일본어 문장을 발음 나는 대로 옮길 때만 켜서 쓰고, 평소 한글 문장을 변환할 땐 꺼두는 걸 추천드려요. 이 변환기 자체도 발음을 근사 표기하는 도구라 실제 표준 표기와는 다를 수 있어요.</p>
       </div>
     </div>
   </div>
@@ -611,6 +684,8 @@
   const particleFixEl = document.getElementById('particleFix');
   const infoBtn = document.getElementById('infoBtn');
   const infoPanel = document.getElementById('infoPanel');
+  const toggleInfoBtn = document.getElementById('toggleInfoBtn');
+  const toggleInfoPanel = document.getElementById('toggleInfoPanel');
 
   let mode = 'hiragana';
   let prevValue = '';
@@ -686,20 +761,33 @@
     paintOutput();
   });
 
+  function setPopoverOpen(btn, panel, open){
+    panel.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', String(open));
+    btn.textContent = open ? '×' : '?';
+  }
+
   infoBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const willOpen = !infoPanel.classList.contains('open');
-    infoPanel.classList.toggle('open', willOpen);
-    infoBtn.setAttribute('aria-expanded', String(willOpen));
-    infoBtn.textContent = willOpen ? '×' : '?';
+    setPopoverOpen(infoBtn, infoPanel, willOpen);
+    if (willOpen) setPopoverOpen(toggleInfoBtn, toggleInfoPanel, false);
+  });
+
+  toggleInfoBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = !toggleInfoPanel.classList.contains('open');
+    setPopoverOpen(toggleInfoBtn, toggleInfoPanel, willOpen);
+    if (willOpen) setPopoverOpen(infoBtn, infoPanel, false);
   });
 
   document.addEventListener('click', (e) => {
-    if (!infoPanel.classList.contains('open')) return;
-    if (infoPanel.contains(e.target) || infoBtn.contains(e.target)) return;
-    infoPanel.classList.remove('open');
-    infoBtn.setAttribute('aria-expanded', 'false');
-    infoBtn.textContent = '?';
+    if (infoPanel.classList.contains('open') && !infoPanel.contains(e.target) && !infoBtn.contains(e.target)) {
+      setPopoverOpen(infoBtn, infoPanel, false);
+    }
+    if (toggleInfoPanel.classList.contains('open') && !toggleInfoPanel.contains(e.target) && !toggleInfoBtn.contains(e.target)) {
+      setPopoverOpen(toggleInfoBtn, toggleInfoPanel, false);
+    }
   });
 
   copyBtn.addEventListener('click', async () => {
