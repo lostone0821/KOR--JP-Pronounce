@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한음→일음 변환기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Zen+Old+Mincho:wght@400;600&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#ece7d9;
+    --paper-2:#e2ddcb;
+    --ink:#221f19;
+    --ink-soft:#5c5646;
+    --indigo:#2b3f66;
+    --indigo-deep:#1c2c49;
+    --indigo-soft:#aab7cd;
+    --line:#c9c1a9;
+    --stamp:#a13a2c;
+  }
+  :root:not([data-theme="light"]){
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#1c1a15;
+      --paper-2:#242018;
+      --ink:#ece7d9;
+      --ink-soft:#b8b096;
+      --indigo:#9db2d9;
+      --indigo-deep:#c7d3ea;
+      --indigo-soft:#3a4c74;
+      --line:#3c372b;
+      --stamp:#e0694f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#1c1a15;
+    --paper-2:#242018;
+    --ink:#ece7d9;
+    --ink-soft:#b8b096;
+    --indigo:#9db2d9;
+    --indigo-deep:#c7d3ea;
+    --indigo-soft:#3a4c74;
+    --line:#3c372b;
+    --stamp:#e0694f;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Noto Sans KR', sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:56px 20px 80px;
+    line-height:1.6;
+  }
+
+  .sheet{
+    width:100%;
+    max-width:640px;
+  }
+
+  header{
+    margin-bottom:40px;
+  }
+  .kicker{
+    font-family:'Zen Old Mincho', serif;
+    font-size:15px;
+    color:var(--indigo);
+    letter-spacing:0.08em;
+    margin:0 0 6px;
+  }
+  h1{
+    font-family:'Noto Serif KR', serif;
+    font-weight:700;
+    font-size:clamp(28px, 5vw, 38px);
+    margin:0 0 12px;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    font-size:15px;
+    color:var(--ink-soft);
+    max-width:52ch;
+    margin:0;
+  }
+
+  .panel{
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:28px;
+    position:relative;
+  }
+
+  label.field-label{
+    display:block;
+    font-family:'Noto Serif KR', serif;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+  }
+
+  textarea{
+    width:100%;
+    min-height:120px;
+    resize:vertical;
+    background:transparent;
+    border:none;
+    border-bottom:1px solid var(--line);
+    padding:4px 2px 16px;
+    font-family:'Noto Sans KR', sans-serif;
+    font-size:18px;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .2s ease;
+  }
+  textarea:focus{
+    border-bottom-color:var(--indigo);
+  }
+  textarea::placeholder{
+    color:var(--ink-soft);
+    opacity:.55;
+  }
+
+  .controls{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:26px 0 22px;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+
+  .toggle{
+    display:inline-flex;
+    border:1px solid var(--indigo);
+    border-radius:999px;
+    padding:3px;
+    position:relative;
+  }
+  .toggle button{
+    appearance:none;
+    border:none;
+    background:transparent;
+    font-family:'Noto Serif KR', serif;
+    font-size:14px;
+    padding:8px 20px;
+    color:var(--indigo);
+    cursor:pointer;
+    border-radius:999px;
+    position:relative;
+    z-index:1;
+    transition:color .25s ease;
+    white-space:nowrap;
+  }
+  .toggle button.active{
+    color:var(--paper);
+  }
+  .toggle .thumb{
+    position:absolute;
+    top:3px; bottom:3px; left:3px;
+    width:calc(50% - 3px);
+    background:var(--indigo);
+    border-radius:999px;
+    transition:transform .28s cubic-bezier(.65,.05,.36,1);
+  }
+  .toggle[data-mode="katakana"] .thumb{
+    transform:translateX(100%);
+  }
+
+  .copy-btn{
+    appearance:none;
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--ink-soft);
+    font-family:'Noto Sans KR', sans-serif;
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:border-color .2s ease, color .2s ease;
+  }
+  .copy-btn:hover{
+    border-color:var(--indigo);
+    color:var(--indigo);
+  }
+  .copy-btn.copied{
+    border-color:var(--stamp);
+    color:var(--stamp);
+  }
+
+  .particle-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin:-8px 0 22px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .particle-row input{
+    accent-color:var(--indigo);
+    width:14px; height:14px;
+    cursor:pointer;
+  }
+  .particle-row span{
+    line-height:1.5;
+  }
+
+  .output-wrap{
+    border-top:1px solid var(--line);
+    padding-top:22px;
+    min-height:92px;
+  }
+  .output{
+    font-family:'Zen Old Mincho', serif;
+    font-size:clamp(22px, 4.6vw, 30px);
+    line-height:1.9;
+    color:var(--ink);
+    word-break:keep-all;
+    overflow-wrap:break-word;
+    white-space:pre-wrap;
+  }
+  .output:empty::before{
+    content:'변환된 가나가 여기에 표시돼요.';
+    font-family:'Noto Sans KR', sans-serif;
+    font-size:15px;
+    color:var(--ink-soft);
+    opacity:.6;
+  }
+
+  .note{
+    margin-top:30px;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    line-height:1.75;
+    max-width:56ch;
+  }
+  .note b{
+    color:var(--ink);
+    font-weight:600;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .toggle .thumb, .toggle button, .copy-btn{ transition:none; }
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <header>
+      <p class="kicker">音写 · おんしゃ</p>
+      <h1>한음→일음 변환기</h1>
+      <p class="lede">입력한 한글을 발음 기준으로 분석해서 가장 비슷한 히라가나·가타카나로 바꿔줍니다. 받침 연음, 비음화 같은 발음 규칙을 반영한 근사치예요.</p>
+    </header>
+
+    <div class="panel">
+      <label class="field-label" for="input">한글 입력</label>
+      <textarea id="input" placeholder="예) 안녕하세요, 오늘 뭐 해요?" autofocus></textarea>
+
+      <div class="controls">
+        <div class="toggle" id="toggle" data-mode="hiragana">
+          <div class="thumb"></div>
+          <button type="button" data-mode="hiragana" class="active" id="btn-hira">ひらがな</button>
+          <button type="button" data-mode="katakana" id="btn-kata">カタカナ</button>
+        </div>
+        <button type="button" class="copy-btn" id="copyBtn">결과 복사</button>
+      </div>
+
+      <label class="particle-row" for="particleFix">
+        <input type="checkbox" id="particleFix">
+        <span>조사 표기 보정 (와→は, 에→へ, 오→を)</span>
+      </label>
+
+      <div class="output-wrap">
+        <div class="output" id="output"></div>
+      </div>
+    </div>
+
+    <p class="note"><b>일러두기.</b> 토글은 지금부터 입력하는 글자에만 적용돼요 — 이미 입력한 글자의 표기는 토글을 바꿔도 그대로 유지돼요. <b>조사 표기 보정</b>은 여러 음절로 된 한 단어(띄어쓰기 없이 붙은 덩어리)의 <b>맨 끝 글자</b>가 순수한 와/에/오일 때만 は/へ/を로 바꿔주는 기능이에요. 이건 문법을 실제로 분석하는 게 아니라 자리 하나만 보고 추측하는 방식이라, "친구와" 같은 평범한 한국어 문장에서도 조사가 아닌 와/에/오가 잘못 바뀔 수 있어요. 일본어 문장을 발음 나는 대로 옮길 때만 켜서 쓰고, 평소 한글 문장을 변환할 땐 꺼두는 걸 추천드려요. 이 변환기 자체도 발음을 근사 표기하는 도구라 실제 표준 표기와는 다를 수 있어요. 연음(받침이 다음 음절로 이어지는 것)과 비음화(예: '합니다'→'함니다')는 반영했지만, 모든 발음 변동을 완벽히 재현하지는 못해요.</p>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ===== Hangul -> Kana (Hiragana base) phonetic engine =====
+  const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+  const JUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+  const JONG = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+
+  function decompose(ch){
+    const code = ch.charCodeAt(0);
+    if (code < 0xAC00 || code > 0xD7A3) return null;
+    const idx = code - 0xAC00;
+    const cho = Math.floor(idx / (21 * 28));
+    const jung = Math.floor((idx % (21 * 28)) / 28);
+    const jong = idx % 28;
+    return { cho: CHO[cho], jung: JUNG[jung], jong: JONG[jong] };
+  }
+
+  const COMPLEX_JONG = {
+    'ㄳ': { stay: 'ㄱ', move: 'ㅅ' },
+    'ㄵ': { stay: 'ㄴ', move: 'ㅈ' },
+    'ㄶ': { stay: '',   move: 'ㄴ' },
+    'ㄺ': { stay: 'ㄹ', move: 'ㄱ' },
+    'ㄻ': { stay: 'ㄹ', move: 'ㅁ' },
+    'ㄼ': { stay: 'ㄹ', move: 'ㅂ' },
+    'ㄽ': { stay: 'ㄹ', move: 'ㅅ' },
+    'ㄾ': { stay: 'ㄹ', move: 'ㅌ' },
+    'ㄿ': { stay: 'ㄹ', move: 'ㅍ' },
+    'ㅀ': { stay: '',   move: 'ㄹ' },
+    'ㅄ': { stay: 'ㅂ', move: 'ㅅ' },
+  };
+  const SIMPLE_MOVE = new Set(['ㄱ','ㄲ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅆ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ']);
+
+  function tenseOrAspirate(cho){
+    return ['ㄲ','ㄸ','ㅃ','ㅆ','ㅉ'].includes(cho);
+  }
+  function stopClass(jong){
+    if (['ㄱ','ㄲ','ㅋ','ㄳ','ㄺ'].includes(jong)) return 'ㅇ';
+    if (['ㄷ','ㅌ','ㅅ','ㅆ','ㅈ','ㅊ','ㅎ'].includes(jong)) return 'ㄴ';
+    if (['ㅂ','ㅍ','ㄼ','ㄿ','ㅄ'].includes(jong)) return 'ㅁ';
+    return null;
+  }
+
+  const SMALL = { a:'ぁ', i:'ぃ', u:'ぅ', e:'ぇ', o:'ぉ', ya:'ゃ', yu:'ゅ', yo:'ょ' };
+
+  function extRow(base){
+    const i = base[1];
+    return {
+      a: base[0], i: base[1], u: base[2], e: base[3], o: base[4],
+      ya: i + SMALL.ya, yu: i + SMALL.yu, yo: i + SMALL.yo,
+      wa: base[2] + SMALL.a, wae: base[2] + SMALL.e, oe: base[2] + SMALL.e,
+      weo: base[2] + SMALL.o, we: base[2] + SMALL.e, wi: base[2] + SMALL.i,
+    };
+  }
+  function kRow(voiced){ return extRow(voiced ? ['が','ぎ','ぐ','げ','ご'] : ['か','き','く','け','こ']); }
+  function sRow(){ return extRow(['さ','し','す','せ','そ']); }
+  function nRow(){ return extRow(['な','に','ぬ','ね','の']); }
+  function hRow(){ return extRow(['は','ひ','ふ','へ','ほ']); }
+  function pRow(voiced){ return extRow(voiced ? ['ば','び','ぶ','べ','ぼ'] : ['ぱ','ぴ','ぷ','ぺ','ぽ']); }
+  function mRow(){ return extRow(['ま','み','む','め','も']); }
+  function rRow(){ return extRow(['ら','り','る','れ','ろ']); }
+  function tPureRow(voiced){
+    const t = voiced ? 'で' : 'て';
+    const base = voiced ? ['だ','','','','ど'] : ['た','','','','と'];
+    const o = base[4];
+    return {
+      a: base[0], i: t + SMALL.i, u: t + SMALL.u, e: t, o: o,
+      ya: t + SMALL.ya, yu: t + SMALL.yu, yo: t + SMALL.yo,
+      wa: o + SMALL.a, wae: o + SMALL.e, oe: o + SMALL.e,
+      weo: o + SMALL.o, we: o + SMALL.e, wi: o + SMALL.i,
+    };
+  }
+  function chRow(voiced){
+    const c = voiced ? 'じ' : 'ち';
+    return {
+      a: c + SMALL.ya, i: c, u: c + SMALL.yu, e: c + SMALL.e, o: c + SMALL.yo,
+      ya: c + SMALL.ya, yu: c + SMALL.yu, yo: c + SMALL.yo,
+      wa: c + SMALL.ya, wae: c + SMALL.e, oe: c + SMALL.e,
+      weo: c + SMALL.yo, we: c + SMALL.e, wi: c + SMALL.i,
+    };
+  }
+  function nullRow(){
+    return {
+      a:'あ', i:'い', u:'う', e:'え', o:'お',
+      ya:'や', yu:'ゆ', yo:'よ',
+      wa:'わ', wae:'うぇ', oe:'うぇ',
+      weo:'うぉ', we:'うぇ', wi:'うぃ',
+    };
+  }
+
+  const VOWEL_KEY = {
+    'ㅏ':'a', 'ㅐ':'e', 'ㅑ':'ya', 'ㅒ':'ya',
+    'ㅓ':'o', 'ㅔ':'e', 'ㅕ':'yo', 'ㅖ':'ye',
+    'ㅗ':'o', 'ㅘ':'wa', 'ㅙ':'wae', 'ㅚ':'oe',
+    'ㅛ':'yo', 'ㅜ':'u', 'ㅝ':'weo', 'ㅞ':'we', 'ㅟ':'wi',
+    'ㅠ':'yu', 'ㅡ':'u', 'ㅢ':'i', 'ㅣ':'i',
+  };
+
+  function rowFor(cho, voiced){
+    switch (cho) {
+      case 'ㄱ': case 'ㅋ': case 'ㄲ': return kRow(voiced);
+      case 'ㄷ': case 'ㅌ': case 'ㄸ': return tPureRow(voiced);
+      case 'ㅂ': case 'ㅍ': case 'ㅃ': return pRow(voiced);
+      case 'ㅈ': case 'ㅊ': case 'ㅉ': return chRow(voiced);
+      case 'ㅅ': case 'ㅆ': return sRow();
+      case 'ㄴ': return nRow();
+      case 'ㅁ': return mRow();
+      case 'ㄹ': return rRow();
+      case 'ㅎ': return hRow();
+      default: return nullRow();
+    }
+  }
+  function voicesWhenMedial(cho){
+    return cho === 'ㄱ' || cho === 'ㄷ' || cho === 'ㅂ' || cho === 'ㅈ';
+  }
+
+  function convertWord(syllables){
+    const n = syllables.length;
+    const arr = syllables.map(s => ({...s}));
+
+    // 비음화: 파열음 받침 + 다음 음절 초성 ㄴ/ㅁ -> 받침이 비음으로
+    for (let i = 0; i < n - 1; i++){
+      const cur = arr[i], next = arr[i+1];
+      if (next.cho !== 'ㄴ' && next.cho !== 'ㅁ') continue;
+      const nasal = stopClass(cur.jong);
+      if (nasal) cur.jong = nasal;
+    }
+
+    // 연음: 받침이 다음 음절(모음 시작)의 초성으로 이어짐
+    for (let i = 0; i < n - 1; i++){
+      const cur = arr[i], next = arr[i+1];
+      if (cur.jong === '') continue;
+      if (next.cho !== 'ㅇ') continue;
+      if (cur.jong === 'ㅇ') continue;
+      if (cur.jong === 'ㅎ'){
+        cur.jong = '';
+      } else if (COMPLEX_JONG[cur.jong]) {
+        const { stay, move } = COMPLEX_JONG[cur.jong];
+        cur.jong = stay;
+        if (move) next.cho = move;
+      } else if (SIMPLE_MOVE.has(cur.jong)) {
+        next.cho = cur.jong;
+        cur.jong = '';
+      }
+      if (next.cho === 'ㄷ' && next.jung === 'ㅣ') next.cho = 'ㅈ';
+      if (next.cho === 'ㅌ' && next.jung === 'ㅣ') next.cho = 'ㅊ';
+    }
+
+    // per-syllable output chunks, each tagged with the syllable's original absolute index
+    const chunks = [];
+    let prevVoicedEnv = false;
+    for (let i = 0; i < n; i++){
+      const s = arr[i];
+      let piece = '';
+      let prefix = '';
+      if (['ㄲ','ㄸ','ㅃ','ㅆ','ㅉ'].includes(s.cho) && i !== 0) prefix = 'っ';
+
+      const voiced = voicesWhenMedial(s.cho) && prevVoicedEnv;
+      let jkey = VOWEL_KEY[s.jung] || 'a';
+      let mora;
+      if (s.jung === 'ㅖ') {
+        const iForm = rowFor(s.cho, voiced).i;
+        mora = iForm + SMALL.e;
+      } else {
+        mora = rowFor(s.cho, voiced)[jkey];
+      }
+      piece += prefix + mora;
+
+      const jong = s.jong;
+      const isLast = (i === n - 1);
+      if (jong === '') {
+        prevVoicedEnv = true;
+      } else if (jong === 'ㄴ' || jong === 'ㅇ') {
+        piece += 'ん'; prevVoicedEnv = true;
+      } else if (jong === 'ㅁ') {
+        piece += 'む'; prevVoicedEnv = true;
+      } else if (jong === 'ㄹ') {
+        piece += 'る'; prevVoicedEnv = true;
+      } else if (['ㄱ','ㄲ','ㅋ'].includes(jong)) {
+        piece += isLast ? 'く' : 'っ'; prevVoicedEnv = false;
+      } else if (['ㅂ','ㅍ'].includes(jong)) {
+        piece += isLast ? 'ぷ' : 'っ'; prevVoicedEnv = false;
+      } else {
+        piece += isLast ? 'と' : 'っ'; prevVoicedEnv = false;
+      }
+      chunks.push({ text: piece, absIndex: s.absIndex, syl: { cho: s.cho, jung: s.jung, jong: s.jong } });
+    }
+    return chunks;
+  }
+
+  function toKatakana(hira){
+    let out = '';
+    for (const ch of hira){
+      const code = ch.codePointAt(0);
+      if (code >= 0x3041 && code <= 0x3096) out += String.fromCodePoint(code + 0x60);
+      else out += ch;
+    }
+    return out;
+  }
+
+  // The three well-known Japanese spelling exceptions: these are written with
+  // the "wa/e/o"-look-alike kana は/へ/を even though they're pronounced
+  // wa/e/o, whenever they work as a grammatical particle. We can only guess
+  // at this — a plain, batchim-less わ/え/お syllable sitting at the very end
+  // of a multi-syllable run is treated as a likely particle. This is a
+  // heuristic, not real grammar analysis, so it's opt-in.
+  function particleKana(syl){
+    if (syl.jong !== '') return null;
+    if (syl.cho !== 'ㅇ') return null;
+    if (syl.jung === 'ㅘ') return 'は';
+    if (syl.jung === 'ㅔ' || syl.jung === 'ㅐ') return 'へ';
+    if (syl.jung === 'ㅗ' || syl.jung === 'ㅓ') return 'を';
+    return null;
+  }
+
+  // Converts text to kana, choosing hiragana or katakana PER SOURCE CHARACTER
+  // based on charModes[absIndex] ('hiragana' | 'katakana'). Non-Hangul characters
+  // (spaces, punctuation, Latin letters, digits) pass through unchanged.
+  function convertMixed(text, charModes, fallbackMode, fixParticles){
+    let result = '';
+    let wordSyls = []; // {cho, jung, jong, absIndex}
+    const flush = () => {
+      if (!wordSyls.length) return;
+      const chunks = convertWord(wordSyls);
+      if (fixParticles && chunks.length >= 2) {
+        const lastIdx = chunks.length - 1;
+        const fix = particleKana(chunks[lastIdx].syl);
+        if (fix) chunks[lastIdx] = { ...chunks[lastIdx], text: fix };
+      }
+      for (const c of chunks) {
+        const mode = charModes[c.absIndex] || fallbackMode;
+        result += mode === 'katakana' ? toKatakana(c.text) : c.text;
+      }
+      wordSyls = [];
+    };
+    for (let i = 0; i < text.length; i++){
+      const ch = text[i];
+      const d = decompose(ch);
+      if (d) {
+        wordSyls.push({ ...d, absIndex: i });
+      } else {
+        flush();
+        result += ch;
+      }
+    }
+    flush();
+    return result;
+  }
+
+
+  // ===== UI wiring =====
+  const input = document.getElementById('input');
+  const output = document.getElementById('output');
+  const toggle = document.getElementById('toggle');
+  const btnHira = document.getElementById('btn-hira');
+  const btnKata = document.getElementById('btn-kata');
+  const copyBtn = document.getElementById('copyBtn');
+  const particleFixEl = document.getElementById('particleFix');
+
+  let mode = 'hiragana';
+  let prevValue = '';
+  let charModes = []; // charModes[i] = 'hiragana' | 'katakana', tells which script char i of the CURRENT input.value was typed under
+
+  // Figures out which part of input.value changed since the last render, and
+  // tags the changed characters with the CURRENTLY active mode while every
+  // untouched character keeps whatever mode it already had. Uses the cursor
+  // position (ground truth for *where* an edit happened) instead of pure
+  // content matching, so repeated identical characters (e.g. "나나나나나나")
+  // don't get mis-attributed when one of them is deleted.
+  function retagModes(newValue, cursorPos){
+    const oldValue = prevValue;
+    const oldModes = charModes;
+    const oldLen = oldValue.length, newLen = newValue.length;
+    const delta = newLen - oldLen;
+
+    let start, end; // range in OLD value that was replaced
+    if (delta > 0) {
+      // net insertion (typing / paste) — assume it landed just before the cursor
+      start = end = Math.max(0, Math.min(oldLen, cursorPos - delta));
+    } else if (delta < 0) {
+      // net deletion (backspace / delete / selection removed) — starts at cursor
+      start = Math.max(0, Math.min(oldLen, cursorPos));
+      end = Math.max(0, Math.min(oldLen, cursorPos - delta));
+    } else {
+      // same length (e.g. a single composing character being replaced) —
+      // content diff is safe here since both strings are the same length
+      let i = 0;
+      while (i < newLen && newValue[i] === oldValue[i]) i++;
+      let j = 0;
+      while (j < newLen - i && newValue[newLen - 1 - j] === oldValue[oldLen - 1 - j]) j++;
+      start = i;
+      end = Math.max(i, oldLen - j);
+    }
+
+    const middleLen = Math.max(0, delta + (end - start));
+    const newModes = oldModes.slice(0, start)
+      .concat(new Array(middleLen).fill(mode))
+      .concat(oldModes.slice(end));
+
+    charModes = newModes.length === newLen ? newModes : oldModes.slice(0, newLen).concat(new Array(Math.max(0, newLen - oldModes.length)).fill(mode));
+    prevValue = newValue;
+  }
+
+  function render(){
+    const cursorPos = input.selectionStart == null ? input.value.length : input.selectionStart;
+    retagModes(input.value, cursorPos);
+    output.textContent = convertMixed(input.value, charModes, mode, particleFixEl.checked);
+  }
+
+  function setMode(next){
+    mode = next;
+    toggle.dataset.mode = mode;
+    btnHira.classList.toggle('active', mode === 'hiragana');
+    btnKata.classList.toggle('active', mode === 'katakana');
+    // switching the toggle does not repaint already-typed text — it only
+    // changes the script used for characters typed from now on
+  }
+
+  input.addEventListener('input', render);
+  btnHira.addEventListener('click', () => setMode('hiragana'));
+  btnKata.addEventListener('click', () => setMode('katakana'));
+  particleFixEl.addEventListener('change', render);
+
+  copyBtn.addEventListener('click', async () => {
+    const text = output.textContent;
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      copyBtn.textContent = '복사됨';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.textContent = '결과 복사';
+        copyBtn.classList.remove('copied');
+      }, 1400);
+    } catch (e) {
+      // clipboard API unavailable — silently ignore
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
